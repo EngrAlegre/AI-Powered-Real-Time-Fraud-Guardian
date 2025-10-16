@@ -46,10 +46,45 @@ export default function LiveDemoDashboard() {
       // Add to transactions list
       setTransactions(prev => [...prev, processedTransaction]);
       
+      // Save to database via API (GaussDB or Firebase)
+      try {
+        const dbTransaction = processorRef.current.toDBTransaction(processedTransaction);
+        const response = await fetch('/api/transactions/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dbTransaction),
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`💾 Transaction saved to ${result.database}:`, result.id);
+        }
+      } catch (saveError) {
+        console.warn('Failed to save transaction to database:', saveError);
+        // Continue anyway - don't break the demo
+      }
+      
       // Generate alert if needed
       const alert = processorRef.current.generateAlert(processedTransaction);
       if (alert) {
         setAlerts(prev => [alert, ...prev]);
+        
+        // Save alert to database via API
+        try {
+          const dbAlert = processorRef.current.toDBAlert(alert);
+          const response = await fetch('/api/alerts/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dbAlert),
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log(`🚨 Alert saved to ${result.database}:`, result.id);
+          }
+        } catch (saveError) {
+          console.warn('Failed to save alert to database:', saveError);
+        }
       }
     } catch (error) {
       console.error('Error processing transaction:', error);

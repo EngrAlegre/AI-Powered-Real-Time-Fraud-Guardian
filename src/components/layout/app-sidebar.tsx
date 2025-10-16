@@ -17,6 +17,7 @@ import {
   BarChart,
   Cpu,
   Gem,
+  Radio,
 } from "lucide-react";
 
 const AppSidebar = () => {
@@ -24,6 +25,7 @@ const AppSidebar = () => {
 
   const menuItems = [
     { href: "/dashboard", icon: <LayoutDashboard />, label: "Dashboard" },
+    { href: "/live-demo", icon: <Radio />, label: "🔴 Live Demo", badge: "Real-Time" },
     { href: "/transactions", icon: <Wallet />, label: "Transactions" },
     { href: "/alerts", icon: <ShieldAlert />, label: "Alerts" },
     { href: "/analytics", icon: <BarChart />, label: "Analytics" },

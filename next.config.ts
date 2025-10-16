@@ -30,6 +30,22 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Configure webpack to handle Node.js modules for pg (PostgreSQL)
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Don't resolve 'pg' on the client side
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        dns: false,
+        net: false,
+        tls: false,
+        fs: false,
+        pg: false,
+        'pg-native': false,
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

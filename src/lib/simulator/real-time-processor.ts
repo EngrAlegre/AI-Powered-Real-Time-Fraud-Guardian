@@ -1,6 +1,8 @@
 /**
  * Real-Time Transaction Processor
  * Handles streaming fraud detection and alert generation
+ * 
+ * NOTE: Database operations (saveTransaction, saveAlert) should only be called server-side
  */
 
 import { panguModelsService } from '@/lib/huawei';
@@ -239,6 +241,52 @@ export class RealTimeProcessor {
     const topFactor = transaction.riskFactors[0];
     
     return `Transaction from ${transaction.userName} at ${transaction.merchantName}. ${topFactor?.description || 'Multiple risk factors detected.'}`;
+  }
+  
+  /**
+   * Convert transaction to database format (for API calls)
+   */
+  toDBTransaction(transaction: ProcessedTransaction) {
+    return {
+      id: transaction.id,
+      user_id: transaction.userId,
+      user_name: transaction.userName,
+      amount: transaction.amount,
+      timestamp: transaction.timestamp,
+      location: transaction.location,
+      country: transaction.country,
+      merchant_type: transaction.merchantType,
+      merchant_name: transaction.merchantName,
+      payment_method: transaction.paymentMethod,
+      card_last4: transaction.cardLast4,
+      ip_address: transaction.ipAddress,
+      device_id: transaction.deviceId,
+      risk_score: transaction.riskScore,
+      fraud_probability: transaction.fraudProbability,
+      confidence: transaction.confidence,
+      ai_explanation: {
+        factors: transaction.riskFactors,
+        analysis: transaction.aiAnalysis,
+      },
+      processing_time: transaction.processingTime,
+      model_version: transaction.modelVersion,
+    };
+  }
+  
+  /**
+   * Convert alert to database format (for API calls)
+   */
+  toDBAlert(alert: FraudAlert) {
+    return {
+      id: alert.id,
+      transaction_id: alert.transactionId,
+      severity: alert.severity,
+      title: alert.title,
+      message: alert.message,
+      status: alert.status,
+      risk_score: alert.riskScore,
+      created_at: alert.timestamp,
+    };
   }
 }
 
