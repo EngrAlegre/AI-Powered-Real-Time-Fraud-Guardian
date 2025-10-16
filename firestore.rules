@@ -1,0 +1,117 @@
+/**
+ * @fileoverview Firestore Security Rules for the Fraud Detection Platform.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model. Each user has complete control over their own data.
+ *
+ * Data Structure:
+ * All data is nested under /users/{userId}, ensuring a clear ownership hierarchy.  Transactions and FraudAlerts
+ * are stored as subcollections under each user.
+ *
+ * Key Security Decisions:
+ * - Users can only access their own data.
+ * - Data validation is relaxed during the prototyping phase to allow for rapid schema iteration.
+ * - Listing of all users is forbidden.
+ *
+ * Denormalization for Authorization:
+ * The data model inherently denormalizes the user ID into the path structure itself, eliminating the need
+ * for additional `get()` calls to verify ownership.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Controls access to user profiles.
+     * @path /users/{userId}
+     * @allow (create) - User with ID 'user123' can create their profile. (auth.uid == 'user123')
+     * @allow (get) - User with ID 'user123' can read their profile. (auth.uid == 'user123')
+     * @allow (update) - User with ID 'user123' can update their profile. (auth.uid == 'user123')
+     * @allow (delete) - User with ID 'user123' can delete their profile. (auth.uid == 'user123')
+     * @deny (create) - User with ID 'user456' attempts to create a profile with ID 'user123'.
+     * @deny (get) - User with ID 'user456' attempts to read profile with ID 'user123'.
+     * @principle Enforces document ownership; users can only manage their own profile.
+     */
+    match /users/{userId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false; // User listing is not allowed.
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to transactions associated with a user.
+     * @path /users/{userId}/transactions/{transactionId}
+     * @allow (create) - User with ID 'user123' can create a transaction. (auth.uid == 'user123')
+     * @allow (get) - User with ID 'user123' can read their transaction. (auth.uid == 'user123')
+     * @allow (update) - User with ID 'user123' can update their transaction. (auth.uid == 'user123')
+     * @allow (delete) - User with ID 'user123' can delete their transaction. (auth.uid == 'user123')
+     * @deny (create) - User with ID 'user456' attempts to create a transaction for user 'user123'.
+     * @deny (get) - User with ID 'user456' attempts to read transaction of user 'user123'.
+     * @principle Enforces document ownership; users can only manage their own transactions.
+     */
+    match /users/{userId}/transactions/{transactionId} {
+       function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to fraud alerts associated with a transaction.
+     * @path /users/{userId}/transactions/{transactionId}/fraudAlerts/{fraudAlertId}
+     * @allow (create) - User with ID 'user123' can create a fraud alert for their transaction. (auth.uid == 'user123')
+     * @allow (get) - User with ID 'user123' can read their fraud alert. (auth.uid == 'user123')
+     * @allow (update) - User with ID 'user123' can update their fraud alert. (auth.uid == 'user123')
+     * @allow (delete) - User with ID 'user123' can delete their fraud alert. (auth.uid == 'user123')
+     * @deny (create) - User with ID 'user456' attempts to create a fraud alert for user 'user123'.
+     * @deny (get) - User with ID 'user456' attempts to read fraud alert of user 'user123'.
+     * @principle Enforces document ownership; users can only manage fraud alerts for their transactions.
+     */
+    match /users/{userId}/transactions/{transactionId}/fraudAlerts/{fraudAlertId} {
+       function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}
